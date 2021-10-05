@@ -1,0 +1,64 @@
+version: '2.4'
+
+# This docker compose file will configure three containers that deliver a
+# complete Camunda EE experience: Camunda EE, Optimize, and Elasticsearch
+# which is necessary for Optimize.
+#
+# Note you must have access to Camunda's private registry at
+# registry.camunda.cloud in order to access Camunda EE and Optimize.
+#
+# Trial licenses can be obtained at https://camunda.com/download/enterprise/
+#
+# Containers failing with Exit code 137 are usually indicative of
+# insufficient memory available to the container.
+#
+
+services:
+  elasticsearch:
+    image: elasticsearch:${ES_VERSION:-7.13.0}
+    container_name: elasticsearch
+    environment:
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+    restart: on-failure
+    cpu_count: 4
+    mem_limit: 2g
+  cambpm:
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.15.6}
+    container_name: cambpm
+    environment:
+      - TZ=America/New_York
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+    ports:
+      - 8080:8080
+    restart: on-failure
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  optimize:
+    image: registry.camunda.cloud/optimize-ee/optimize:${OPTIMIZE_VERSION:-3.5.0}
+    container_name: optimize
+    environment:
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+      - OPTIMIZE_CAMUNDABPM_REST_URL=http://cambpm:8080/engine-rest
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_EVENT_BASED_PROCESSES_ENABLED=true
+      - OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]
+      - OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret
+    ports:
+      - 8090:8090
+    restart: on-failure
+    cpu_count: 4
+    mem_limit: 2g
