@@ -1,5 +1,5 @@
-# camunda-ee-stack
-Camunda EE, Optimize and Elasticsearch, all in one docker compose file 
+# full-camunda-ee-docker
+Camunda EE, Optimize and Elasticsearch, all in one simple docker compose file 
 
 Edit the .env file to select desired images.
 Review supported combinations for [**Camunda Platform**](https://docs.camunda.org/manual/latest/introduction/supported-environments/) and [**Optimize**](https://docs.camunda.org/optimize/latest/technical-guide/supported-environments/) when making these selections.
